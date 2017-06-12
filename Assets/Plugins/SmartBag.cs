@@ -4,26 +4,88 @@ using System.Collections.Generic;
 
 namespace UToolbox.SmartBag
 {
-    /* 
-     * 
-     */
+    public class SmartBag
+    {
+        
+    }
+
+    public abstract class ConditionedItem
+    {
+        #region Public fields and properties
+
+        public string Id
+        {
+            get { return _id; }
+        }
+
+        public List<Condition> Preconditions
+        {
+            get { return _preconditions; }
+        }
+
+        public List<Condition> Effects
+        {
+            get { return _effects; }
+        }
+
+        #endregion
+
+        #region Class members
+
+        private string _id;
+        private float _weight;
+        private int _lockCounter;
+        private int _lockedInterval;
+        private List<Condition> _preconditions;
+        private List<Condition> _effects;
+
+        #endregion
+
+        #region Constructors
+
+        public ConditionedItem(string id, float weight, int lockedInterval, List<Condition> preconditions, List<Condition> effects)
+        {
+            _id = id;
+            _weight = weight;
+            _lockCounter = 0;
+            _lockedInterval = lockedInterval;
+            _preconditions = preconditions;
+            _effects = effects;
+        }
+
+        #endregion
+
+        #region Public methods
+
+        public List<Condition> Use()
+        {
+            _lockCounter = _lockedInterval;
+            return _effects;   
+        }
+
+        public void Tick()
+        {
+            _lockCounter--;    
+            if (_lockCounter < 0)
+            {
+                _lockCounter = 0;
+            }
+        }
+
+        public bool IsLocked()
+        {
+            return (_lockCounter > 0);
+        }
+
+        #endregion
+    }
 
     public class Condition
     {
-        #region Constructor
+        #region Class members
 
-        public Condition(string id, bool status)
-        {
-            _id = id;
-            _status = status;
-        }
-
-        public Condition(string description)
-        {
-            var newCondition = Parse(description);
-            _id = newCondition.Id;
-            _status = newCondition.Status;
-        }
+        private string _id;
+        private bool _status;
 
         #endregion
 
@@ -41,14 +103,20 @@ namespace UToolbox.SmartBag
 
         #endregion
 
-        #region Class members
+        #region Constructor
 
-        private string _id;
-        private bool _status;
+        public Condition(string id, bool status)
+        {
+            _id = id;
+            _status = status;
+        }
 
-        #endregion
-
-        #region Private methods
+        public Condition(string description)
+        {
+            var newCondition = Parse(description);
+            _id = newCondition.Id;
+            _status = newCondition.Status;
+        }
 
         #endregion
 

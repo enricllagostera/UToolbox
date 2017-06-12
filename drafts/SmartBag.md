@@ -36,7 +36,7 @@ This is an abstract class that serves as a base for any item you might want to p
 - lockTimer
 - lockedInterval
 - preConditions
-- postConditions
+- effects
 
 #### Methods
 
