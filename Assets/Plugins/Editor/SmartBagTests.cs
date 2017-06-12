@@ -1,14 +1,111 @@
-﻿using UnityEngine;
+﻿/* Enric Llagostera <http://enric.llagostera.com.br> */
+
+using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using UToolbox.SmartBag;
+using UToolbox.SmartBagSystem;
 using NUnit.Framework;
 
 namespace UToolbox.Tests
 {
     public class SmartBagTests
     {
-        #region ConditionedItem Tests
+        #region SmartBag
+
+        [Test]
+        public void SmartBag_Constructor()
+        {
+            // Empty constructor
+            var sb = new SmartBag();
+            Assert.True(sb.Items.Count == 0);
+            Assert.True(sb.State.Count == 0);
+
+            // Sample data constructor
+            var post = new List<Condition>();
+            post.Add(new Condition("test1"));
+            post.Add(new Condition("!test2"));
+            var item = new CItemTest("test", 10, 2, null, post);
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(item);
+            sb = new SmartBag(allItems, post);
+            Assert.AreEqual(sb.Items.Count, 1);
+            Assert.AreEqual(sb.State.Count, 2);
+        }
+
+        [Test]
+        public void SmartBag_GetAndSetCondition()
+        {
+            // Sample data
+            var post = new List<Condition>();
+            post.Add(new Condition("test1"));
+            post.Add(new Condition("!test2"));
+            var item = new CItemTest("test", 10, 2, null, post);
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(item);
+            var sb = new SmartBag(allItems, post);
+            // new condition through set
+            sb.SetCondition(new Condition("test4"));
+            Assert.True(sb.State[2].Status);
+            // update condition
+            sb.SetCondition(new Condition("!test1"));
+            Assert.False(sb.State[0].Status);
+            // get existing condition
+            var res = sb.GetCondition("test2");
+            Assert.False(res.Status);
+            // attempt to get non-existing condition
+            res = sb.GetCondition("test5");
+            Assert.IsNull(res);
+        }
+
+        [Test]
+        public void SmartBag_TickAll()
+        {
+            // Sample data
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(new CItemTest("test1", 10, 1, null, null));
+            allItems.Add(new CItemTest("test2", 10, 2, null, null));
+            var sb = new SmartBag(allItems);
+            sb.Items[0].Use();
+            sb.Items[1].Use();
+            Assert.True(sb.Items[0].IsLocked());
+            Assert.True(sb.Items[1].IsLocked());
+            sb.Tick();
+            Assert.False(sb.Items[0].IsLocked());
+            Assert.True(sb.Items[1].IsLocked());
+            sb.Tick();
+            Assert.False(sb.Items[1].IsLocked());
+        }
+
+        [Test]
+        public void SmartBag_Filter()
+        {
+            // Sample data
+            var precond = new List<Condition>();
+            precond.Add(new Condition("test1"));
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(new CItemTest("test1", 10, 1, precond, null));
+            allItems.Add(new CItemTest("test2", 10, 2, null, null));
+            var sb = new SmartBag(allItems);
+            var query = new List<Condition>();
+            query.Add(new Condition("test3"));
+            Assert.AreEqual(sb.Filter(query).Count, 0);
+
+            query = new List<Condition>();
+            query.Add(new Condition("test1"));
+            Assert.AreEqual(sb.Filter(query).Count, 1);
+
+            query = new List<Condition>();
+            query.Add(new Condition("test1"));
+            query.Add(new Condition("test2"));
+            Assert.AreEqual(sb.Filter(query).Count, 0);
+
+            query = new List<Condition>();
+            Assert.AreEqual(sb.Filter(query).Count, 2);
+        }
+
+        #endregion
+
+        #region ConditionedItem
 
         private class CItemTest : ConditionedItem
         {
@@ -75,7 +172,7 @@ namespace UToolbox.Tests
 
         #endregion
 
-        #region Condition Tests
+        #region Condition
 
         [Test]
         public void Condition_Parse_True()

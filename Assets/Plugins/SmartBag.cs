@@ -2,11 +2,106 @@
 
 using System.Collections.Generic;
 
-namespace UToolbox.SmartBag
+namespace UToolbox.SmartBagSystem
 {
     public class SmartBag
     {
-        
+        #region Class members
+
+        private List<ConditionedItem> _items;
+        private List<Condition> _state;
+
+        #endregion
+
+        #region Public fields and properties
+
+        public List<ConditionedItem> Items
+        {
+            get { return _items; }
+        }
+
+        public List<Condition> State
+        {
+            get { return _state; }
+        }
+
+        #endregion
+
+        #region Constructor
+
+        public SmartBag(List<ConditionedItem> startingItems = null, List<Condition> initialState = null)
+        {
+            _items = new List<ConditionedItem>();
+            if (startingItems != null)
+            {
+                _items.AddRange(startingItems);
+            }
+            _state = new List<Condition>();
+            if (initialState != null)
+            {
+                _state.AddRange(initialState);
+            }
+        }
+
+        #endregion
+
+        #region Public methods
+
+        public List<ConditionedItem> Filter(List<Condition> query)
+        {
+            var res = new List<ConditionedItem>();
+            _items.ForEach(i =>
+                {
+                    if (Condition.CheckAll(i.Preconditions, query))
+                    {
+                        res.Add(i);
+                    }
+                });
+            return res;
+        }
+
+        public void Tick()
+        {
+            _items.ForEach(i => i.Tick());
+        }
+
+        public void SetState(List<Condition> newState)
+        {
+            _state = newState;
+        }
+
+        public List<Condition> GetState()
+        {
+            return _state;
+        }
+
+        public void SetCondition(Condition newCondition)
+        {
+            var cond = _state.Find(c => c.Id == newCondition.Id);
+            if (cond == null)
+            {
+                _state.Add(newCondition);
+            }
+            else
+            {
+                cond.Status = newCondition.Status;
+            }
+        }
+
+        public Condition GetCondition(string id)
+        {
+            var cond = _state.Find(c => c.Id == id);
+            if (cond != null)
+            {
+                return cond;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
     }
 
     public abstract class ConditionedItem
@@ -49,8 +144,22 @@ namespace UToolbox.SmartBag
             _weight = weight;
             _lockCounter = 0;
             _lockedInterval = lockedInterval;
-            _preconditions = preconditions;
-            _effects = effects;
+            if (preconditions == null)
+            {
+                _preconditions = new List<Condition>();
+            }
+            else
+            {
+                _preconditions = preconditions;    
+            }
+            if (effects == null)
+            {
+                _effects = new List<Condition>();
+            }
+            else
+            {
+                _effects = effects;    
+            }
         }
 
         #endregion
@@ -99,6 +208,7 @@ namespace UToolbox.SmartBag
         public bool Status
         {
             get { return _status; }
+            set { _status = value; }
         }
 
         #endregion
@@ -144,6 +254,14 @@ namespace UToolbox.SmartBag
 
         public static bool CheckAll(List<Condition> state, List<Condition> query)
         {
+            if (state == null)
+            {
+                return false;
+            }
+            if (query == null)
+            {
+                return true;
+            }
             for (int i = 0; i < query.Count; i++)
             {
                 var res = state.Find(c => c.Id == query[i].Id);

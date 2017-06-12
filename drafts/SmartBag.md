@@ -1,4 +1,4 @@
-# SmartBag system
+# UToolbox.SmartBagSystem
 
 ## `SmartBag`
 
