@@ -48,10 +48,16 @@ namespace UToolbox.SmartBagSystem
 
         #region Public methods
 
-        public ConditionedItem PickRandom(List<Condition> query = null)
+        public ConditionedItem UseRandom(List<Condition> query = null)
         {
+            // handle null query
+            var qry = new List<Condition>();
+            if (query != null)
+            {
+                qry.AddRange(query);
+            }
             // get a specific item by id
-            var res = Draw(query);
+            var res = Draw(qry);
             if (res == null)
             {
                 return null;
@@ -69,7 +75,7 @@ namespace UToolbox.SmartBagSystem
             return res;
         }
 
-        public ConditionedItem Pick(string id, bool forcePick = false)
+        public ConditionedItem Use(string id, bool forcePick = false)
         {
             // forcePick can be used to get specific items regardless of state
             if (forcePick)
@@ -77,20 +83,32 @@ namespace UToolbox.SmartBagSystem
                 var res = _items.Find(i => i.Id == id);
                 if (res == null)
                 {
+                    Debug.LogWarning(id + " item not available. The id must be wrong.");
                     return null;
+                }
+                // advance the whole bag timer
+                Tick();
+                // call its use method
+                var effects = res.Use();
+                // apply stateChanges
+                foreach (var change in effects)
+                {
+                    SetCondition(change);
                 }
                 return res;
             }
             // apply precondition filter based on current state
-            var pool = FilterConditions(_state);
+            var pool = FilterOnState(_state);
             if (pool.Count == 0)
             {
+                Debug.LogWarning(id + " item not available in present conditions.");
                 return null;
             }
             // get a specific item by id
             var pick = pool.Find(i => i.Id == id && i.IsLocked() == false);
             if (pick == null)
             {
+                Debug.LogWarning(id + " item not available. Check its id and locks.");
                 return null;
             }
             // advance the whole bag timer
@@ -106,17 +124,54 @@ namespace UToolbox.SmartBagSystem
             return pick;
         }
 
-        public ConditionedItem Peek(List<Condition> preconditions)
+        public ConditionedItem FindRandom(List<Condition> preconditions)
         {
             return Draw(preconditions);
         }
 
-        public List<ConditionedItem> FilterConditions(List<Condition> query)
+        public ConditionedItem Find(string id, bool forcePick = false)
         {
+            // forcePick can be used to get specific items regardless of state
+            if (forcePick)
+            {
+                var res = _items.Find(i => i.Id == id);
+                if (res == null)
+                {
+                    Debug.LogWarning(id + " item not available. The id must be wrong.");
+                    return null;
+                }
+                return res;
+            }
+            // apply precondition filter based on current state
+            var pool = FilterOnState(_state);
+            if (pool.Count == 0)
+            {
+                Debug.LogWarning(id + " item not available in present conditions.");
+                return null;
+            }
+            // get a specific item by id
+            var pick = pool.Find(i => i.Id == id && i.IsLocked() == false);
+            if (pick == null)
+            {
+                Debug.LogWarning(id + " item not available. Check its id and locks.");
+                return null;
+            }
+            // return item
+            return pick;
+        }
+
+        public List<ConditionedItem> FilterOnState(List<Condition> query)
+        {
+            // handle null query
+            var qry = new List<Condition>();
+            if (query != null)
+            {
+                qry.AddRange(query);
+            }
             var res = new List<ConditionedItem>();
             _items.ForEach(i =>
                 {
-                    if (Condition.CheckAll(i.Preconditions, query))
+                    if (Condition.CheckRequirements(i.Requirements, qry))
                     {
                         res.Add(i);
                     }
@@ -131,6 +186,11 @@ namespace UToolbox.SmartBagSystem
 
         public void SetState(List<Condition> newState)
         {
+            if (newState == null)
+            {
+                Debug.LogWarning("The new State is null, so a new empty State will be created.");
+                _state = new List<Condition>();
+            }
             _state = newState;
         }
 
@@ -161,6 +221,7 @@ namespace UToolbox.SmartBagSystem
             }
             else
             {
+                Debug.LogWarning("The " + id + " Condition does not exist in the bag's state.");
                 return null;
             }
         }
@@ -177,7 +238,7 @@ namespace UToolbox.SmartBagSystem
             {
                 conds.AddRange(preconditions);
             }
-            var pool = FilterConditions(conds);
+            var pool = FilterOnState(conds);
             if (pool.Count == 0)
             {
                 return null;
@@ -214,6 +275,25 @@ namespace UToolbox.SmartBagSystem
         #endregion
     }
 
+    /*
+    public interface ConditionedItem
+    {
+        string Id { get; }
+
+        float Weight { get; }
+
+        List<Condition> Requirements { get; }
+
+        List<Condition> Effects { get; }
+
+        List<Condition> Use();
+
+        void Tick();
+
+        bool IsLocked();
+    }
+    */
+
     public abstract class ConditionedItem
     {
         #region Public fields and properties
@@ -228,9 +308,9 @@ namespace UToolbox.SmartBagSystem
             get { return _weight; }
         }
 
-        public List<Condition> Preconditions
+        public List<Condition> Requirements
         {
-            get { return _preconditions; }
+            get { return _requirements; }
         }
 
         public List<Condition> Effects
@@ -246,7 +326,7 @@ namespace UToolbox.SmartBagSystem
         private float _weight;
         private int _lockCounter;
         private int _lockedInterval;
-        private List<Condition> _preconditions;
+        private List<Condition> _requirements;
         private List<Condition> _effects;
 
         #endregion
@@ -261,11 +341,11 @@ namespace UToolbox.SmartBagSystem
             _lockedInterval = lockedInterval;
             if (preconditions == null)
             {
-                _preconditions = new List<Condition>();
+                _requirements = new List<Condition>();
             }
             else
             {
-                _preconditions = preconditions;    
+                _requirements = preconditions;    
             }
             if (effects == null)
             {
@@ -339,6 +419,10 @@ namespace UToolbox.SmartBagSystem
         public Condition(string description)
         {
             var newCondition = Parse(description);
+            if (newCondition == null)
+            {
+                Debug.LogError("Could not create new Condition.");
+            }
             _id = newCondition.Id;
             _status = newCondition.Status;
         }
@@ -349,6 +433,13 @@ namespace UToolbox.SmartBagSystem
 
         public static Condition Parse(string description)
         {
+            // error cases: too short or has whitespace
+            if (description.Length < 2 || description.IndexOf(" ") >= 0)
+            {
+                Debug.LogError("Description cannot be parsed. Too short or has whitespace.");
+                return null;
+            }
+
             string id = description;
             bool status = true;
 
@@ -364,11 +455,27 @@ namespace UToolbox.SmartBagSystem
 
         public static bool Check(Condition current, Condition query)
         {
+            // cleanup
+            if (current == null || query == null)
+            {
+                Debug.LogError("Cannot compare null Conditions.");
+                return false;
+            }
             return (current.Id == query.Id) && (current.Status == query.Status);
         }
 
-        public static bool CheckAll(List<Condition> reqs, List<Condition> state)
+        public static bool CheckRequirements(List<Condition> reqs, List<Condition> state)
         {
+            // cleanup
+            if (reqs == null)
+            {
+                reqs = new List<Condition>();
+            }
+            if (state == null)
+            {
+                state = new List<Condition>();
+            }
+            // processing
             var matches = new List<Condition>();
             state.ForEach(s =>
                 {
@@ -383,6 +490,19 @@ namespace UToolbox.SmartBagSystem
                 return true;
             }
             return false;
+        }
+
+        public static List<Condition> Group(params string[] conditions)
+        {
+            var list = new List<Condition>();
+            if (conditions != null)
+            {
+                foreach (var c in conditions)
+                {
+                    list.Add(Parse(c));
+                }
+            }
+            return list;
         }
 
         #endregion

@@ -8,9 +8,14 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 
 ### In development
 
-- A generic `ConditionalWeightedBag` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game element, which allows for highly flexible and controllable random draws.
+- A generic `SmartBag` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game element, which allows for highly flexible and controllable random draws.
 
 ### Wish-list
 
 - A simple `SpriteFader`, including alpha fades and dissolves controlled by a grayscale texture, to use for transitions or as a more general visual effect.
-- Everybody loves working with spreadsheets, so I think a basic decorator to a CSV file parser/writer utility would be useful. Not sure on what features I would include, though.
+- Everybody loves working with spreadsheets, so I think a **basic decorator to a CSV file parser/writer utility** would be useful. Not sure on what features I would include, though.
+
+## General implementation notes
+
+1. Empty objects will always be represented by `null` when possible. Check for it in case of errors.
+1. Errors will be logged using Unity's `Debug.LogError` or `Debug.LogWarning` in case it should not be too noisy, as in search methods.
