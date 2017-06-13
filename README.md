@@ -14,3 +14,7 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 
 - A simple `SpriteFader`, including alpha fades and dissolves controlled by a grayscale texture, to use for transitions or as a more general visual effect.
 - Everybody loves working with spreadsheets, so I think a basic decorator to a CSV file parser/writer utility would be useful. Not sure on what features I would include, though.
+
+## Implementation notes
+
+1. Empty objects will always be represented by `null` when possible. Check for it in case of errors.

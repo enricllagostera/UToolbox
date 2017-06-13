@@ -339,6 +339,10 @@ namespace UToolbox.SmartBagSystem
         public Condition(string description)
         {
             var newCondition = Parse(description);
+            if (newCondition == null)
+            {
+                Debug.LogError("Could not create new Condition.");
+            }
             _id = newCondition.Id;
             _status = newCondition.Status;
         }
@@ -349,6 +353,13 @@ namespace UToolbox.SmartBagSystem
 
         public static Condition Parse(string description)
         {
+            // error cases: too short or has whitespace
+            if (description.Length < 2 || description.IndexOf(" ") >= 0)
+            {
+                Debug.LogError("Description cannot be parsed. Too short or has whitespace.");
+                return null;
+            }
+
             string id = description;
             bool status = true;
 
@@ -364,11 +375,27 @@ namespace UToolbox.SmartBagSystem
 
         public static bool Check(Condition current, Condition query)
         {
+            // cleanup
+            if (current == null || query == null)
+            {
+                Debug.LogError("Cannot compare null Conditions.");
+                return false;
+            }
             return (current.Id == query.Id) && (current.Status == query.Status);
         }
 
         public static bool CheckAll(List<Condition> reqs, List<Condition> state)
         {
+            // cleanup
+            if (reqs == null)
+            {
+                reqs = new List<Condition>();
+            }
+            if (state == null)
+            {
+                state = new List<Condition>();
+            }
+            // processing
             var matches = new List<Condition>();
             state.ForEach(s =>
                 {
