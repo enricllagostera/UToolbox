@@ -48,7 +48,7 @@ namespace UToolbox.SmartBagSystem
 
         #region Public methods
 
-        public ConditionedItem PickRandom(List<Condition> query = null)
+        public ConditionedItem UseRandom(List<Condition> query = null)
         {
             // handle null query
             var qry = new List<Condition>();
@@ -75,7 +75,7 @@ namespace UToolbox.SmartBagSystem
             return res;
         }
 
-        public ConditionedItem Pick(string id, bool forcePick = false)
+        public ConditionedItem Use(string id, bool forcePick = false)
         {
             // forcePick can be used to get specific items regardless of state
             if (forcePick)
@@ -85,6 +85,15 @@ namespace UToolbox.SmartBagSystem
                 {
                     Debug.LogWarning(id + " item not available. The id must be wrong.");
                     return null;
+                }
+                // advance the whole bag timer
+                Tick();
+                // call its use method
+                var effects = res.Use();
+                // apply stateChanges
+                foreach (var change in effects)
+                {
+                    SetCondition(change);
                 }
                 return res;
             }
@@ -115,9 +124,40 @@ namespace UToolbox.SmartBagSystem
             return pick;
         }
 
-        public ConditionedItem Peek(List<Condition> preconditions)
+        public ConditionedItem FindRandom(List<Condition> preconditions)
         {
             return Draw(preconditions);
+        }
+
+        public ConditionedItem Find(string id, bool forcePick = false)
+        {
+            // forcePick can be used to get specific items regardless of state
+            if (forcePick)
+            {
+                var res = _items.Find(i => i.Id == id);
+                if (res == null)
+                {
+                    Debug.LogWarning(id + " item not available. The id must be wrong.");
+                    return null;
+                }
+                return res;
+            }
+            // apply precondition filter based on current state
+            var pool = FilterConditions(_state);
+            if (pool.Count == 0)
+            {
+                Debug.LogWarning(id + " item not available in present conditions.");
+                return null;
+            }
+            // get a specific item by id
+            var pick = pool.Find(i => i.Id == id && i.IsLocked() == false);
+            if (pick == null)
+            {
+                Debug.LogWarning(id + " item not available. Check its id and locks.");
+                return null;
+            }
+            // return item
+            return pick;
         }
 
         public List<ConditionedItem> FilterConditions(List<Condition> query)
@@ -431,6 +471,19 @@ namespace UToolbox.SmartBagSystem
                 return true;
             }
             return false;
+        }
+
+        public static List<Condition> Group(params string[] conditions)
+        {
+            var list = new List<Condition>();
+            if (conditions != null)
+            {
+                foreach (var c in conditions)
+                {
+                    list.Add(Parse(c));
+                }
+            }
+            return list;
         }
 
         #endregion

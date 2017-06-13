@@ -6,12 +6,22 @@ using System.Collections.Generic;
 using UToolbox.SmartBagSystem;
 using NUnit.Framework;
 
-namespace UToolbox.Tests
+namespace Tests.SmartBagSystem
 {
-    public class SmartBagTests
-    {
-        #region SmartBag
+    #region Mockup classes
 
+    public class CItemTest : ConditionedItem
+    {
+        public CItemTest(string id, float weight, int lockedInterval, List<Condition> preconditions, List<Condition> effects)
+            : base(id, weight, lockedInterval, preconditions, effects)
+        {
+        }
+    }
+
+    #endregion
+
+    public class SmartBag_Tests
+    {
         [Test]
         public void SmartBag_Constructor()
         {
@@ -137,7 +147,7 @@ namespace UToolbox.Tests
 
 
         [Test]
-        public void SmartBag_Peek_NoReqs()
+        public void SmartBag_FindRandom_NoReqs()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -149,24 +159,24 @@ namespace UToolbox.Tests
             query.Add(new Condition("cond1"));
             query.Add(new Condition("cond3"));
             Assert.True(sb.FilterConditions(query).Count == 3);
-            Assert.True(sb.Peek(query).Id == "item3");
+            Assert.True(sb.FindRandom(query).Id == "item3");
         }
 
         [Test]
-        public void SmartBag_Peek_TwoReqs()
+        public void SmartBag_FindRandom_TwoReqs()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 10, 1, new List<Condition>() { new Condition("cond1") }, null));
-            allItems.Add(new CItemTest("item2", 10, 2, new List<Condition>() { new Condition("cond2") }, null));
-            allItems.Add(new CItemTest("item3", 10, 2, new List<Condition>() { new Condition("cond1"), new Condition("cond3") }, null));
+            allItems.Add(new CItemTest("item1", 10, 1, Condition.Group(), Condition.Group("!cond1")));
+            allItems.Add(new CItemTest("item2", 10, 2, Condition.Group("cond2"), null));
+            allItems.Add(new CItemTest("item3", 10, 2, Condition.Group("cond1", "cond3"), null));
             var sb = new SmartBag(allItems);
             var query = new List<Condition>();
             query.Add(new Condition("cond1"));
             query.Add(new Condition("cond3"));
-            Assert.False(sb.Peek(query).Id == "item2");
-            Assert.False(sb.Peek(query).Id == "item2");
-            Assert.False(sb.Peek(query).Id == "item2");
+            Assert.False(sb.FindRandom(query).Id == "item2");
+            Assert.False(sb.FindRandom(query).Id == "item2");
+            Assert.False(sb.FindRandom(query).Id == "item2");
         }
 
         [Test]
@@ -179,7 +189,7 @@ namespace UToolbox.Tests
             var sb = new SmartBag(allItems);
             var query = new List<Condition>();
             query.Add(new Condition("cond1"));
-            Assert.AreEqual(sb.Peek(query).Id, "item1");
+            Assert.AreEqual(sb.FindRandom(query).Id, "item1");
         }
 
         [Test]
@@ -194,10 +204,10 @@ namespace UToolbox.Tests
             var query = new List<Condition>();
 
             int c1 = 0, c2 = 0, c3 = 0;
-            var draw = sb.Peek(query);
+            var draw = sb.FindRandom(query);
             for (int i = 0; i < 100; i++)
             {
-                draw = sb.Peek(query);
+                draw = sb.FindRandom(query);
                 switch (draw.Id)
                 {
                     case "item1":
@@ -223,7 +233,7 @@ namespace UToolbox.Tests
             allItems.Add(new CItemTest("item1", 5, 1, null, null));
             allItems.Add(new CItemTest("item2", 20, 2, null, null));
             var sb = new SmartBag(allItems);
-            Assert.Null(sb.Pick("item5"));
+            Assert.Null(sb.Use("item5"));
         }
 
         [Test]
@@ -234,7 +244,7 @@ namespace UToolbox.Tests
             allItems.Add(new CItemTest("item1", 5, 2, null, null));
             allItems.Add(new CItemTest("item2", 20, 4, null, null));
             var sb = new SmartBag(allItems);
-            var pick = sb.Pick("item1");
+            var pick = sb.Use("item1");
             Assert.True(pick.Id == "item1");
             sb.Tick();
             Assert.True(pick.IsLocked());
@@ -250,10 +260,10 @@ namespace UToolbox.Tests
             allItems.Add(new CItemTest("item1", 5, 2, null, null));
             allItems.Add(new CItemTest("item2", 20, 4, null, null));
             var sb = new SmartBag(allItems);
-            var pick = sb.Pick("item1");
+            var pick = sb.Use("item1");
             Assert.True(pick.Id == "item1");
             Assert.True(pick.IsLocked());
-            pick = sb.Pick("item1", true);
+            pick = sb.Use("item1", true);
             Assert.True(pick.Id == "item1");
         }
 
@@ -266,7 +276,7 @@ namespace UToolbox.Tests
             allItems.Add(new CItemTest("item2", 20, 4, null, null));
             var sb = new SmartBag(allItems);
             Assert.Null(sb.GetCondition("post1"));
-            var pick = sb.Pick("item1");
+            var pick = sb.Use("item1");
             Assert.True(sb.GetCondition("post1").Status);
         }
 
@@ -278,85 +288,18 @@ namespace UToolbox.Tests
             allItems.Add(new CItemTest("item1", 5, 4, null, new List<Condition>(){ new Condition("post1") }));
             allItems.Add(new CItemTest("item2", 20, 4, null, null));
             var sb = new SmartBag(allItems);
-            var pick1 = sb.PickRandom(null);
-            var pick2 = sb.PickRandom(null);
-            var pick3 = sb.PickRandom(null);
+            var pick1 = sb.UseRandom(null);
+            var pick2 = sb.UseRandom(null);
+            var pick3 = sb.UseRandom(null);
             Assert.True(pick1.Id != pick2.Id);
             Assert.Null(pick3);
 
         }
 
-        #endregion
+    }
 
-        #region ConditionedItem
-
-        private class CItemTest : ConditionedItem
-        {
-            public CItemTest(string id, float weight, int lockedInterval, List<Condition> preconditions, List<Condition> effects)
-                : base(id, weight, lockedInterval, preconditions, effects)
-            {
-            }
-        }
-
-        [Test]
-        public void ConditionedItem_Constructor()
-        {
-            //Arrange
-            var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
-
-            //Assert
-            Assert.False(item.IsLocked());
-        }
-
-        [Test]
-        public void ConditionedItem_Use_LockedAfter()
-        {
-            //Arrange
-            var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
-            var effects = item.Use();
-
-            //Assert
-            Assert.True(item.IsLocked());
-        }
-
-        [Test]
-        public void ConditionedItem_Use_GetEffects()
-        {
-            //Arrange
-            var post = new List<Condition>();
-            post.Add(new Condition("teste1"));
-            post.Add(new Condition("!teste2"));
-            var item = new CItemTest("teste", 10, 2, null, post);
-
-            //Act
-            var afterEffects = item.Use();
-
-            //Assert
-            Assert.True(Condition.CheckAll(afterEffects, post));
-        }
-
-        [Test]
-        public void ConditionedItem_Ticks()
-        {
-            //Arrange
-            var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
-            item.Use();
-            item.Tick();
-            Assert.True(item.IsLocked());
-            item.Tick();
-            Assert.False(item.IsLocked());
-        }
-
-        #endregion
-
-        #region Condition
-
+    public class Condition_Tests
+    {
         [Test]
         public void Condition_Parse_True()
         {
@@ -476,8 +419,65 @@ namespace UToolbox.Tests
             //Assert
             Assert.False(Condition.CheckAll(reqs, state));
         }
+    }
 
-        #endregion
+    public class ConditionedItem_Tests
+    {
+
+        [Test]
+        public void ConditionedItem_Constructor()
+        {
+            //Arrange
+            var item = new CItemTest("teste", 10, 2, null, null);
+
+            //Act
+
+            //Assert
+            Assert.False(item.IsLocked());
+        }
+
+        [Test]
+        public void ConditionedItem_Use_LockedAfter()
+        {
+            //Arrange
+            var item = new CItemTest("teste", 10, 2, null, null);
+
+            //Act
+            var effects = item.Use();
+
+            //Assert
+            Assert.True(item.IsLocked());
+        }
+
+        [Test]
+        public void ConditionedItem_Use_GetEffects()
+        {
+            //Arrange
+            var post = new List<Condition>();
+            post.Add(new Condition("teste1"));
+            post.Add(new Condition("!teste2"));
+            var item = new CItemTest("teste", 10, 2, null, post);
+
+            //Act
+            var afterEffects = item.Use();
+
+            //Assert
+            Assert.True(Condition.CheckAll(afterEffects, post));
+        }
+
+        [Test]
+        public void ConditionedItem_Ticks()
+        {
+            //Arrange
+            var item = new CItemTest("teste", 10, 2, null, null);
+
+            //Act
+            item.Use();
+            item.Tick();
+            Assert.True(item.IsLocked());
+            item.Tick();
+            Assert.False(item.IsLocked());
+        }
     }
 }
 
