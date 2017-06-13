@@ -50,8 +50,14 @@ namespace UToolbox.SmartBagSystem
 
         public ConditionedItem PickRandom(List<Condition> query = null)
         {
+            // handle null query
+            var qry = new List<Condition>();
+            if (query != null)
+            {
+                qry.AddRange(query);
+            }
             // get a specific item by id
-            var res = Draw(query);
+            var res = Draw(qry);
             if (res == null)
             {
                 return null;
@@ -77,6 +83,7 @@ namespace UToolbox.SmartBagSystem
                 var res = _items.Find(i => i.Id == id);
                 if (res == null)
                 {
+                    Debug.LogWarning(id + " item not available. The id must be wrong.");
                     return null;
                 }
                 return res;
@@ -85,12 +92,14 @@ namespace UToolbox.SmartBagSystem
             var pool = FilterConditions(_state);
             if (pool.Count == 0)
             {
+                Debug.LogWarning(id + " item not available in present conditions.");
                 return null;
             }
             // get a specific item by id
             var pick = pool.Find(i => i.Id == id && i.IsLocked() == false);
             if (pick == null)
             {
+                Debug.LogWarning(id + " item not available. Check its id and locks.");
                 return null;
             }
             // advance the whole bag timer
@@ -113,10 +122,16 @@ namespace UToolbox.SmartBagSystem
 
         public List<ConditionedItem> FilterConditions(List<Condition> query)
         {
+            // handle null query
+            var qry = new List<Condition>();
+            if (query != null)
+            {
+                qry.AddRange(query);
+            }
             var res = new List<ConditionedItem>();
             _items.ForEach(i =>
                 {
-                    if (Condition.CheckAll(i.Preconditions, query))
+                    if (Condition.CheckAll(i.Preconditions, qry))
                     {
                         res.Add(i);
                     }
@@ -131,6 +146,11 @@ namespace UToolbox.SmartBagSystem
 
         public void SetState(List<Condition> newState)
         {
+            if (newState == null)
+            {
+                Debug.LogWarning("The new State is null, so a new empty State will be created.");
+                _state = new List<Condition>();
+            }
             _state = newState;
         }
 
@@ -161,6 +181,7 @@ namespace UToolbox.SmartBagSystem
             }
             else
             {
+                Debug.LogWarning("The " + id + " Condition does not exist in the bag's state.");
                 return null;
             }
         }

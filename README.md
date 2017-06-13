@@ -18,3 +18,4 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 ## Implementation notes
 
 1. Empty objects will always be represented by `null` when possible. Check for it in case of errors.
+1. Errors will be logged using Unity's `Debug.LogError` or `Debug.LogWarning` in case it should not be too noisy, as in search methods. 
