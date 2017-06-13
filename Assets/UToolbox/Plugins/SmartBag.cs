@@ -275,6 +275,25 @@ namespace UToolbox.SmartBagSystem
         #endregion
     }
 
+    /*
+    public interface ConditionedItem
+    {
+        string Id { get; }
+
+        float Weight { get; }
+
+        List<Condition> Requirements { get; }
+
+        List<Condition> Effects { get; }
+
+        List<Condition> Use();
+
+        void Tick();
+
+        bool IsLocked();
+    }
+    */
+
     public abstract class ConditionedItem
     {
         #region Public fields and properties
