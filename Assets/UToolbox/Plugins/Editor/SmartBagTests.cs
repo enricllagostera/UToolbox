@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UToolbox.SmartBagSystem;
 using NUnit.Framework;
 
-namespace Tests.SmartBagSystem
+namespace UToolbox.Tests.SmartBagSystem
 {
     #region Mockup classes
 
@@ -45,7 +45,8 @@ namespace Tests.SmartBagSystem
             // Sample data
             var post = Condition.Group("test1", "!test2");
             var item = new CItemTest("test", 10, 2, null, post);
-            var allItems = new List<ConditionedItem>().Add(item);
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(item);
             var sb = new SmartBag(allItems, post);
             // new condition through set
             sb.SetCondition(new Condition("test4"));
@@ -81,67 +82,62 @@ namespace Tests.SmartBagSystem
         }
 
         [Test]
-        public void SmartBag_Filter_UnusedReqs()
+        public void SmartBag_FilterOnState_UnusedReqs()
         {
             // Sample data
-            var precond = new List<Condition>();
-            precond.Add(new Condition("test1"));
+            var reqs = Condition.Group("test1");
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("test1", 10, 1, precond, null));
+            allItems.Add(new CItemTest("test1", 10, 1, reqs, null));
+            allItems.Add(new CItemTest("test2", 10, 2, null, null));
+            var sb = new SmartBag(allItems);
+            var state = Condition.Group("test3");
+            Assert.AreEqual(1, sb.FilterOnState(state).Count);
+        }
+
+        [Test]
+        public void SmartBag_FilterOnState_OneReqSatisfied()
+        {
+            // Sample data
+            var reqs = Condition.Group("test1");
+            var allItems = new List<ConditionedItem>();
+            allItems.Add(new CItemTest("test1", 10, 1, reqs, null));
             allItems.Add(new CItemTest("test2", 10, 2, null, null));
             var sb = new SmartBag(allItems);
             var query = new List<Condition>();
-            query.Add(new Condition("test3"));
-            Assert.AreEqual(sb.FilterConditions(query).Count, 1);
+            var state = Condition.Group("test1");
+            Assert.AreEqual(sb.FilterOnState(state).Count, 2);
         }
 
         [Test]
-        public void SmartBag_Filter_OneReqSatisfied()
+        public void SmartBag_FilterOnState_NoState()
         {
             // Sample data
-            var precond = new List<Condition>();
-            precond.Add(new Condition("cond1"));
+            var reqs = Condition.Group("test1");
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 10, 1, precond, null));
-            allItems.Add(new CItemTest("item2", 10, 2, null, null));
+            allItems.Add(new CItemTest("test1", 10, 1, reqs, null));
+            allItems.Add(new CItemTest("test2", 10, 2, null, null));
             var sb = new SmartBag(allItems);
             var query = new List<Condition>();
-            query.Add(new Condition("cond1"));
-            Debug.Log(sb.FilterConditions(query).Count);
-            Assert.AreEqual(sb.FilterConditions(query).Count, 2);
+            var state = Condition.Group();
+            Assert.AreEqual(sb.FilterOnState(query).Count, 1);
         }
 
         [Test]
-        public void SmartBag_Filter_NoQuery()
+        public void SmartBag_FilterOnState_AllReqs()
         {
             // Sample data
-            var precond = new List<Condition>();
-            precond.Add(new Condition("cond1"));
+            var reqs = Condition.Group("test1");
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 10, 1, precond, null));
-            allItems.Add(new CItemTest("item2", 10, 2, null, null));
+            allItems.Add(new CItemTest("test1", 10, 1, reqs, null));
+            allItems.Add(new CItemTest("test2", 10, 2, reqs, null));
             var sb = new SmartBag(allItems);
-            var query = new List<Condition>();
-            Assert.AreEqual(sb.FilterConditions(query).Count, 1);
-        }
-
-        [Test]
-        public void SmartBag_Filter_AllReqs()
-        {
-            // Sample data
-            var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 10, 1, new List<Condition>() { new Condition("cond1") }, null));
-            allItems.Add(new CItemTest("item2", 10, 2, new List<Condition>() { new Condition("cond2") }, null));
-            var sb = new SmartBag(allItems);
-            var query = new List<Condition>();
-            query.Add(new Condition("cond1"));
-            query.Add(new Condition("cond2"));
-            Assert.AreEqual(sb.FilterConditions(query).Count, 2);
+            var state = Condition.Group("test1", "!test2");
+            Assert.AreEqual(sb.FilterOnState(state).Count, 2);
         }
 
 
         [Test]
-        public void SmartBag_FindRandom_NoReqs()
+        public void SmartBag_FindRandom_ZeroedWeights()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -149,10 +145,8 @@ namespace Tests.SmartBagSystem
             allItems.Add(new CItemTest("item2", 0, 2, null, null));
             allItems.Add(new CItemTest("item3", 100, 2, null, null));
             var sb = new SmartBag(allItems);
-            var query = new List<Condition>();
-            query.Add(new Condition("cond1"));
-            query.Add(new Condition("cond3"));
-            Assert.True(sb.FilterConditions(query).Count == 3);
+            var query = Condition.Group("cond1", "cond3");
+            Assert.True(sb.FilterOnState(query).Count == 3);
             Assert.True(sb.FindRandom(query).Id == "item3");
         }
 
@@ -165,29 +159,26 @@ namespace Tests.SmartBagSystem
             allItems.Add(new CItemTest("item2", 10, 2, Condition.Group("cond2"), null));
             allItems.Add(new CItemTest("item3", 10, 2, Condition.Group("cond1", "cond3"), null));
             var sb = new SmartBag(allItems);
-            var query = new List<Condition>();
-            query.Add(new Condition("cond1"));
-            query.Add(new Condition("cond3"));
+            var query = Condition.Group("cond1", "cond3");
             Assert.False(sb.FindRandom(query).Id == "item2");
             Assert.False(sb.FindRandom(query).Id == "item2");
             Assert.False(sb.FindRandom(query).Id == "item2");
         }
 
         [Test]
-        public void SmartBag_Peek_OneReq()
+        public void SmartBag_FindRandom_OneReq()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 10, 1, new List<Condition>() { new Condition("cond1") }, null));
-            allItems.Add(new CItemTest("item2", 10, 2, new List<Condition>() { new Condition("cond2") }, null));
+            allItems.Add(new CItemTest("item1", 10, 1, Condition.Group("cond1"), null));
+            allItems.Add(new CItemTest("item2", 10, 2, Condition.Group("cond2"), null));
             var sb = new SmartBag(allItems);
-            var query = new List<Condition>();
-            query.Add(new Condition("cond1"));
+            var query = Condition.Group("cond1");
             Assert.AreEqual(sb.FindRandom(query).Id, "item1");
         }
 
         [Test]
-        public void SmartBag_Peek_Proportions()
+        public void SmartBag_FindRandom_Proportions()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -215,12 +206,12 @@ namespace Tests.SmartBagSystem
                         break;
                 }
             }
-            Debug.Log(c1 + " / " + c2 + " / " + c3);
+            Debug.Log("FindRandom_Proportions test: " + c1 + " / " + c2 + " / " + c3);
             Assert.True(c1 < c2 && c2 < c3);
         }
 
         [Test]
-        public void SmartBag_Pick_NotFound()
+        public void SmartBag_Use_NotFound()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -231,7 +222,7 @@ namespace Tests.SmartBagSystem
         }
 
         [Test]
-        public void SmartBag_Pick_IdFoundAndTick()
+        public void SmartBag_Use_IdFoundAndTick()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -247,7 +238,7 @@ namespace Tests.SmartBagSystem
         }
 
         [Test]
-        public void SmartBag_Pick_ForcePick()
+        public void SmartBag_Use_ForcePick()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
@@ -262,11 +253,11 @@ namespace Tests.SmartBagSystem
         }
 
         [Test]
-        public void SmartBag_Pick_IdFoundAndStateChanges()
+        public void SmartBag_Use_IdFoundAndStateChanges()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();
-            allItems.Add(new CItemTest("item1", 5, 2, null, new List<Condition>(){ new Condition("post1") }));
+            allItems.Add(new CItemTest("item1", 5, 2, null, Condition.Group("post1")));
             allItems.Add(new CItemTest("item2", 20, 4, null, null));
             var sb = new SmartBag(allItems);
             Assert.Null(sb.GetCondition("post1"));
@@ -275,7 +266,7 @@ namespace Tests.SmartBagSystem
         }
 
         [Test]
-        public void SmartBag_PickRandom()
+        public void SmartBag_UseRandom()
         {
             // Sample data
             var allItems = new List<ConditionedItem>();

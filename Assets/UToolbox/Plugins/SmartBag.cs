@@ -98,7 +98,7 @@ namespace UToolbox.SmartBagSystem
                 return res;
             }
             // apply precondition filter based on current state
-            var pool = FilterConditions(_state);
+            var pool = FilterOnState(_state);
             if (pool.Count == 0)
             {
                 Debug.LogWarning(id + " item not available in present conditions.");
@@ -143,7 +143,7 @@ namespace UToolbox.SmartBagSystem
                 return res;
             }
             // apply precondition filter based on current state
-            var pool = FilterConditions(_state);
+            var pool = FilterOnState(_state);
             if (pool.Count == 0)
             {
                 Debug.LogWarning(id + " item not available in present conditions.");
@@ -160,7 +160,7 @@ namespace UToolbox.SmartBagSystem
             return pick;
         }
 
-        public List<ConditionedItem> FilterConditions(List<Condition> query)
+        public List<ConditionedItem> FilterOnState(List<Condition> query)
         {
             // handle null query
             var qry = new List<Condition>();
@@ -238,7 +238,7 @@ namespace UToolbox.SmartBagSystem
             {
                 conds.AddRange(preconditions);
             }
-            var pool = FilterConditions(conds);
+            var pool = FilterOnState(conds);
             if (pool.Count == 0)
             {
                 return null;
