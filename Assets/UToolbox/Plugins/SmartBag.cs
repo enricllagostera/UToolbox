@@ -171,7 +171,7 @@ namespace UToolbox.SmartBagSystem
             var res = new List<ConditionedItem>();
             _items.ForEach(i =>
                 {
-                    if (Condition.CheckAll(i.Preconditions, qry))
+                    if (Condition.CheckRequirements(i.Requirements, qry))
                     {
                         res.Add(i);
                     }
@@ -289,9 +289,9 @@ namespace UToolbox.SmartBagSystem
             get { return _weight; }
         }
 
-        public List<Condition> Preconditions
+        public List<Condition> Requirements
         {
-            get { return _preconditions; }
+            get { return _requirements; }
         }
 
         public List<Condition> Effects
@@ -307,7 +307,7 @@ namespace UToolbox.SmartBagSystem
         private float _weight;
         private int _lockCounter;
         private int _lockedInterval;
-        private List<Condition> _preconditions;
+        private List<Condition> _requirements;
         private List<Condition> _effects;
 
         #endregion
@@ -322,11 +322,11 @@ namespace UToolbox.SmartBagSystem
             _lockedInterval = lockedInterval;
             if (preconditions == null)
             {
-                _preconditions = new List<Condition>();
+                _requirements = new List<Condition>();
             }
             else
             {
-                _preconditions = preconditions;    
+                _requirements = preconditions;    
             }
             if (effects == null)
             {
@@ -445,7 +445,7 @@ namespace UToolbox.SmartBagSystem
             return (current.Id == query.Id) && (current.Status == query.Status);
         }
 
-        public static bool CheckAll(List<Condition> reqs, List<Condition> state)
+        public static bool CheckRequirements(List<Condition> reqs, List<Condition> state)
         {
             // cleanup
             if (reqs == null)

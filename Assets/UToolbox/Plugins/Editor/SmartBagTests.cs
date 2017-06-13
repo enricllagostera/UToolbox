@@ -29,15 +29,12 @@ namespace Tests.SmartBagSystem
             var sb = new SmartBag();
             Assert.True(sb.Items.Count == 0);
             Assert.True(sb.State.Count == 0);
-
             // Sample data constructor
-            var post = new List<Condition>();
-            post.Add(new Condition("test1"));
-            post.Add(new Condition("!test2"));
-            var item = new CItemTest("test", 10, 2, null, post);
+            var state = Condition.Group("test1", "!test2");
+            var item = new CItemTest("test", 10, 2, null, null);
             var allItems = new List<ConditionedItem>();
             allItems.Add(item);
-            sb = new SmartBag(allItems, post);
+            sb = new SmartBag(allItems, state);
             Assert.AreEqual(sb.Items.Count, 1);
             Assert.AreEqual(sb.State.Count, 2);
         }
@@ -46,12 +43,9 @@ namespace Tests.SmartBagSystem
         public void SmartBag_GetAndSetCondition()
         {
             // Sample data
-            var post = new List<Condition>();
-            post.Add(new Condition("test1"));
-            post.Add(new Condition("!test2"));
+            var post = Condition.Group("test1", "!test2");
             var item = new CItemTest("test", 10, 2, null, post);
-            var allItems = new List<ConditionedItem>();
-            allItems.Add(item);
+            var allItems = new List<ConditionedItem>().Add(item);
             var sb = new SmartBag(allItems, post);
             // new condition through set
             sb.SetCondition(new Condition("test4"));
@@ -303,121 +297,80 @@ namespace Tests.SmartBagSystem
         [Test]
         public void Condition_Parse_True()
         {
-            //Arrange
-            var cond = new Condition("teste", false);
-
-            //Act
-            cond = Condition.Parse("teste");
-
-            //Assert
+            Condition cond = Condition.Parse("teste");
             Assert.True(cond.Status);
         }
 
         [Test]
         public void Condition_Parse_False()
         {
-            //Arrange
-            var cond = new Condition("teste", true);
-
-            //Act
-            cond = Condition.Parse("!teste");
-
-            //Assert
+            Condition cond = Condition.Parse("!teste");
             Assert.False(cond.Status);
         }
 
         [Test]
         public void Condition_Constructor_Parse()
         {
-            //Act
             var cond = new Condition("!teste");
-
-            //Assert
             Assert.True(cond.Status == false && cond.Id == "teste");
         }
 
         [Test]
         public void Condition_Check_DiffIds()
         {
-            //Arrange
             var cond1 = new Condition("teste1");
             var cond2 = new Condition("teste2");
-
-            //Assert
             Assert.False(Condition.Check(cond1, cond2));
         }
 
         [Test]
         public void Condition_Check_DiffValues()
         {
-            //Arrange
             var cond1 = new Condition("teste");
             var cond2 = new Condition("!teste");
-
-            //Assert
             Assert.False(Condition.Check(cond1, cond2));
         }
 
+
         [Test]
-        public void Condition_CheckAll_ExpectedQuery()
+        public void Condition_Group()
         {
             //Arrange
-            var reqs = new List<Condition>();
-            reqs.Add(new Condition("teste1"));
-
-            var state = new List<Condition>();
-            state.Add(new Condition("teste1"));
-            state.Add(new Condition("!teste2"));
-
-            //Assert
-            Assert.True(Condition.CheckAll(reqs, state));
+            var g = Condition.Group();
+            Assert.AreEqual(0, g.Count);
+            g = Condition.Group("test1", "test2");
+            Assert.AreEqual(2, g.Count);
         }
 
         [Test]
-        public void Condition_CheckAll_LargeQuery()
+        public void Condition_CheckReqs_1to1Query()
         {
-            //Arrange
-            var state = new List<Condition>();
-            state.Add(new Condition("teste1"));
-            state.Add(new Condition("!teste2"));
-
-            var query = new List<Condition>();
-            query.Add(new Condition("teste3"));
-
-            //Assert
-            Assert.False(Condition.CheckAll(state, query));
+            List<Condition> reqs = Condition.Group("test1");
+            List<Condition> state = Condition.Group("test1");
+            Assert.True(Condition.CheckRequirements(reqs, state));
+            state[0] = Condition.Parse("!test1");
+            Assert.False(Condition.CheckRequirements(reqs, state));
         }
 
         [Test]
-        public void Condition_CheckAll_DiffValuesQuery()
+        public void Condition_CheckReqs_Nulls()
         {
-            //Arrange
-            var state = new List<Condition>();
-            state.Add(new Condition("teste1"));
-            state.Add(new Condition("!teste2"));
-
-            var query = new List<Condition>();
-            query.Add(new Condition("!teste1"));
-
-            //Assert
-            Assert.False(Condition.CheckAll(state, query));
+            List<Condition> reqs = null;
+            List<Condition> state = Condition.Group("test1");
+            Assert.True(Condition.CheckRequirements(reqs, state));
+            reqs = Condition.Group("test1");
+            state = null;
+            Assert.False(Condition.CheckRequirements(reqs, state));
         }
 
         [Test]
-        public void Condition_CheckAll_OverflowQuery()
+        public void Condition_CheckReqs_2to1Query()
         {
-            //Arrange
-            var reqs = new List<Condition>();
-            reqs.Add(new Condition("teste1"));
-            reqs.Add(new Condition("!teste2"));
-            reqs.Add(new Condition("teste3"));
-
-            var state = new List<Condition>();
-            state.Add(new Condition("teste1"));
-            state.Add(new Condition("!teste2"));
-
-            //Assert
-            Assert.False(Condition.CheckAll(reqs, state));
+            List<Condition> reqs = Condition.Group("test1", "test2");
+            List<Condition> state = Condition.Group("test1", "!test2", "test3");
+            Assert.False(Condition.CheckRequirements(reqs, state));
+            reqs = Condition.Group("test1", "!test2");
+            Assert.True(Condition.CheckRequirements(reqs, state));
         }
     }
 
@@ -427,51 +380,34 @@ namespace Tests.SmartBagSystem
         [Test]
         public void ConditionedItem_Constructor()
         {
-            //Arrange
-            var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
-
-            //Assert
+            var item = new CItemTest("test", 10, 2, null, null);
             Assert.False(item.IsLocked());
+            Assert.True(item.Id == "test");
+            Assert.AreEqual(0, item.Requirements.Count);
         }
 
         [Test]
         public void ConditionedItem_Use_LockedAfter()
         {
-            //Arrange
             var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
             var effects = item.Use();
-
-            //Assert
             Assert.True(item.IsLocked());
         }
 
         [Test]
         public void ConditionedItem_Use_GetEffects()
         {
-            //Arrange
-            var post = new List<Condition>();
-            post.Add(new Condition("teste1"));
-            post.Add(new Condition("!teste2"));
+            var reqs = Condition.Group("test1", "test2");
+            var post = Condition.Group("test1", "!test2");
             var item = new CItemTest("teste", 10, 2, null, post);
-
-            //Act
             var afterEffects = item.Use();
-
-            //Assert
-            Assert.True(Condition.CheckAll(afterEffects, post));
+            Assert.False(Condition.CheckRequirements(reqs, afterEffects));
         }
 
         [Test]
         public void ConditionedItem_Ticks()
         {
-            //Arrange
             var item = new CItemTest("teste", 10, 2, null, null);
-
-            //Act
             item.Use();
             item.Tick();
             Assert.True(item.IsLocked());
