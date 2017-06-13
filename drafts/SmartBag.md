@@ -15,15 +15,15 @@ This is a bag for random draws which takes into account:
 
 #### Methods
 
-- Draw() : draws a random item, calls its `Use` method, advances the bag's timer and returns the item.
-- Pick(id) : draws a specific item, calls its `Use` method, advances the bag's timer and returns the item.
-- Peek() : draws a random item and returns it without using it.
-- Filter(conditions) : returns all items that fit a set of conditions.
-- SetCondition(condition) : updates a condition on the bag.
-- GetCondition(condition) : returns a condition in the bag's state.
-- SetState(condition[]) : changes the whole state of the bag.
-- GetState(condition[]) : returns the bag's whole state.
-- Tick() : advances the timer in all items.
+- [x] PickRandom() : draws a random item, calls its `Use` method, advances the bag's timer and returns the item.
+- [x] Pick(id, forcePick) : draws a specific item, calls its `Use` method, advances the bag's timer and returns the item. `forcePick` disregards the conditions and locks in place and just uses and returns an item.
+- [x] Peek() : draws a random item and returns it without using it.
+- [x] Filter(conditions) : returns all items that fit a set of conditions.
+- [x] SetCondition(condition) : updates a condition on the bag.
+- [x] GetCondition(condition) : returns a condition in the bag's state.
+- [x] SetState(condition[]) : changes the whole state of the bag.
+- [x] GetState(condition[]) : returns the bag's whole state.
+- [x] Tick() : advances the timer in all items.
 
 ## `ConditionedItem`
 

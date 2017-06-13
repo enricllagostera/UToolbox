@@ -1,6 +1,7 @@
 ﻿/* Enric Llagostera <http://enric.llagostera.com.br> */
 
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UToolbox.SmartBagSystem
 {
@@ -47,7 +48,70 @@ namespace UToolbox.SmartBagSystem
 
         #region Public methods
 
-        public List<ConditionedItem> Filter(List<Condition> query)
+        public ConditionedItem PickRandom(List<Condition> query = null)
+        {
+            // get a specific item by id
+            var res = Draw(query);
+            if (res == null)
+            {
+                return null;
+            }
+            // advance the whole bag timer
+            Tick();
+            // call its use method
+            var stateChanges = res.Use();
+            // apply stateChanges
+            foreach (var change in stateChanges)
+            {
+                SetCondition(change);
+            }
+            // return item
+            return res;
+        }
+
+        public ConditionedItem Pick(string id, bool forcePick = false)
+        {
+            // forcePick can be used to get specific items regardless of state
+            if (forcePick)
+            {
+                var res = _items.Find(i => i.Id == id);
+                if (res == null)
+                {
+                    return null;
+                }
+                return res;
+            }
+            // apply precondition filter based on current state
+            var pool = FilterConditions(_state);
+            if (pool.Count == 0)
+            {
+                return null;
+            }
+            // get a specific item by id
+            var pick = pool.Find(i => i.Id == id && i.IsLocked() == false);
+            if (pick == null)
+            {
+                return null;
+            }
+            // advance the whole bag timer
+            Tick();
+            // call its use method
+            var stateChanges = pick.Use();
+            // apply stateChanges
+            foreach (var change in stateChanges)
+            {
+                SetCondition(change);
+            }
+            // return item
+            return pick;
+        }
+
+        public ConditionedItem Peek(List<Condition> preconditions)
+        {
+            return Draw(preconditions);
+        }
+
+        public List<ConditionedItem> FilterConditions(List<Condition> query)
         {
             var res = new List<ConditionedItem>();
             _items.ForEach(i =>
@@ -102,6 +166,52 @@ namespace UToolbox.SmartBagSystem
         }
 
         #endregion
+
+        #region Private methods
+
+        private ConditionedItem Draw(List<Condition> preconditions)
+        {
+            // handle null preconditions
+            var conds = new List<Condition>();
+            if (preconditions != null)
+            {
+                conds.AddRange(preconditions);
+            }
+            var pool = FilterConditions(conds);
+            if (pool.Count == 0)
+            {
+                return null;
+            }
+            // filter for locked
+            var notLocked = pool.FindAll(i => i.IsLocked() == false);
+            if (notLocked.Count == 0)
+            {
+                return null;
+            }
+            // several options are available
+            float[] weights = new float[notLocked.Count];
+            float totalWeights = 0;
+            for (int i = 0; i < notLocked.Count; i++)
+            {
+                totalWeights += notLocked[i].Weight;
+                weights[i] = totalWeights;
+            }
+            // Debug.Log("W: " + weights.ToString());
+            var roll = Random.Range(0f, totalWeights);
+            // Debug.Log("R: " + roll);
+            for (int w = 0; w < weights.Length; w++)
+            {
+                // got to the propoer weighted index
+                if (weights[w] >= roll)
+                {
+                    // Debug.Log(notLocked[w].Id);
+                    return notLocked[w];
+                }
+            }
+            return null;
+        }
+
+        #endregion
     }
 
     public abstract class ConditionedItem
@@ -111,6 +221,11 @@ namespace UToolbox.SmartBagSystem
         public string Id
         {
             get { return _id; }
+        }
+
+        public float Weight
+        {
+            get { return _weight; }
         }
 
         public List<Condition> Preconditions
@@ -138,7 +253,7 @@ namespace UToolbox.SmartBagSystem
 
         #region Constructors
 
-        public ConditionedItem(string id, float weight, int lockedInterval, List<Condition> preconditions, List<Condition> effects)
+        public ConditionedItem(string id, float weight, int lockedInterval, List<Condition> preconditions = null, List<Condition> effects = null)
         {
             _id = id;
             _weight = weight;
@@ -252,29 +367,22 @@ namespace UToolbox.SmartBagSystem
             return (current.Id == query.Id) && (current.Status == query.Status);
         }
 
-        public static bool CheckAll(List<Condition> state, List<Condition> query)
+        public static bool CheckAll(List<Condition> reqs, List<Condition> state)
         {
-            if (state == null)
-            {
-                return false;
-            }
-            if (query == null)
+            var matches = new List<Condition>();
+            state.ForEach(s =>
+                {
+                    var satisfiedCond = reqs.Find(r => Check(r, s));
+                    if (satisfiedCond != null)
+                    {
+                        matches.Add(satisfiedCond);
+                    }
+                });
+            if (matches.Count == reqs.Count)
             {
                 return true;
             }
-            for (int i = 0; i < query.Count; i++)
-            {
-                var res = state.Find(c => c.Id == query[i].Id);
-                if (res == null)
-                {
-                    return false;
-                }
-                if (!Check(res, query[i]))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return false;
         }
 
         #endregion
