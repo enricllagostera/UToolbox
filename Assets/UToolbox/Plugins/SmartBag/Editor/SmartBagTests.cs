@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UToolbox.SmartBagSystem;
 using NUnit.Framework;
 
-namespace UToolbox.Tests.SmartBagSystem
+namespace UToolbox.Tests
 {
     #region Mockup classes
 
