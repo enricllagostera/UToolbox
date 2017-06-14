@@ -5,18 +5,18 @@ using UnityEngine;
 
 namespace UToolbox.SmartBagSystem
 {
-    public class SmartBag
+    public class SmartBag<T> where T : ConditionedItem
     {
         #region Class members
 
-        private List<ConditionedItem> _items;
+        private List<T> _items;
         private List<Condition> _state;
 
         #endregion
 
         #region Public fields and properties
 
-        public List<ConditionedItem> Items
+        public List<T> Items
         {
             get { return _items; }
         }
@@ -30,9 +30,9 @@ namespace UToolbox.SmartBagSystem
 
         #region Constructor
 
-        public SmartBag(List<ConditionedItem> startingItems = null, List<Condition> initialState = null)
+        public SmartBag(List<T> startingItems = null, List<Condition> initialState = null)
         {
-            _items = new List<ConditionedItem>();
+            _items = new List<T>();
             if (startingItems != null)
             {
                 _items.AddRange(startingItems);
@@ -48,7 +48,7 @@ namespace UToolbox.SmartBagSystem
 
         #region Public methods
 
-        public ConditionedItem UseRandom(List<Condition> query = null)
+        public T UseRandom(List<Condition> query = null)
         {
             // handle null query
             var qry = new List<Condition>();
@@ -63,7 +63,7 @@ namespace UToolbox.SmartBagSystem
                 return null;
             }
             // advance the whole bag timer
-            Tick();
+            TickAll();
             // call its use method
             var stateChanges = res.Use();
             // apply stateChanges
@@ -75,7 +75,7 @@ namespace UToolbox.SmartBagSystem
             return res;
         }
 
-        public ConditionedItem Use(string id, bool forcePick = false)
+        public T Use(string id, bool forcePick = false)
         {
             // forcePick can be used to get specific items regardless of state
             if (forcePick)
@@ -87,7 +87,7 @@ namespace UToolbox.SmartBagSystem
                     return null;
                 }
                 // advance the whole bag timer
-                Tick();
+                TickAll();
                 // call its use method
                 var effects = res.Use();
                 // apply stateChanges
@@ -112,7 +112,7 @@ namespace UToolbox.SmartBagSystem
                 return null;
             }
             // advance the whole bag timer
-            Tick();
+            TickAll();
             // call its use method
             var stateChanges = pick.Use();
             // apply stateChanges
@@ -124,12 +124,12 @@ namespace UToolbox.SmartBagSystem
             return pick;
         }
 
-        public ConditionedItem FindRandom(List<Condition> preconditions)
+        public T FindRandom(List<Condition> preconditions)
         {
             return Draw(preconditions);
         }
 
-        public ConditionedItem Find(string id, bool forcePick = false)
+        public T Find(string id, bool forcePick = false)
         {
             // forcePick can be used to get specific items regardless of state
             if (forcePick)
@@ -160,7 +160,7 @@ namespace UToolbox.SmartBagSystem
             return pick;
         }
 
-        public List<ConditionedItem> FilterOnState(List<Condition> query)
+        public List<T> FilterOnState(List<Condition> query)
         {
             // handle null query
             var qry = new List<Condition>();
@@ -168,7 +168,7 @@ namespace UToolbox.SmartBagSystem
             {
                 qry.AddRange(query);
             }
-            var res = new List<ConditionedItem>();
+            var res = new List<T>();
             _items.ForEach(i =>
                 {
                     if (Condition.CheckRequirements(i.Requirements, qry))
@@ -179,9 +179,14 @@ namespace UToolbox.SmartBagSystem
             return res;
         }
 
-        public void Tick()
+        public void TickAll()
         {
             _items.ForEach(i => i.Tick());
+        }
+
+        public void UnlockAll()
+        {
+            _items.ForEach(i => i.Unlock());
         }
 
         public void SetState(List<Condition> newState)
@@ -230,7 +235,7 @@ namespace UToolbox.SmartBagSystem
 
         #region Private methods
 
-        private ConditionedItem Draw(List<Condition> preconditions)
+        private T Draw(List<Condition> preconditions)
         {
             // handle null preconditions
             var conds = new List<Condition>();
@@ -274,25 +279,6 @@ namespace UToolbox.SmartBagSystem
 
         #endregion
     }
-
-    /*
-    public interface ConditionedItem
-    {
-        string Id { get; }
-
-        float Weight { get; }
-
-        List<Condition> Requirements { get; }
-
-        List<Condition> Effects { get; }
-
-        List<Condition> Use();
-
-        void Tick();
-
-        bool IsLocked();
-    }
-    */
 
     public abstract class ConditionedItem
     {
@@ -360,6 +346,11 @@ namespace UToolbox.SmartBagSystem
         #endregion
 
         #region Public methods
+
+        public void Unlock()
+        {
+            _lockCounter = 0;
+        }
 
         public List<Condition> Use()
         {
