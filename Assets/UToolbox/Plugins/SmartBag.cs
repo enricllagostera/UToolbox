@@ -267,7 +267,7 @@ namespace UToolbox.SmartBagSystem
             // Debug.Log("R: " + roll);
             for (int w = 0; w < weights.Length; w++)
             {
-                // got to the propoer weighted index
+                // got to the proper weighted index
                 if (weights[w] >= roll)
                 {
                     // Debug.Log(notLocked[w].Id);

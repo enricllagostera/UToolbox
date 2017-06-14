@@ -6,18 +6,8 @@ using UToolbox.SmartBagSystem;
 
 public class CardGame : MonoBehaviour
 {
-    #region Public fields
-
-    #endregion
-
-    #region Class members
-
     private SmartBag<PlayingCard> _deck;
     private int _cardCount = 0;
-
-    #endregion
-
-    #region Unity methods
 
     void Awake()
     {
@@ -38,12 +28,10 @@ public class CardGame : MonoBehaviour
         {
             _cardCount++;
             print(_deck.UseRandom(null).Id + " : " + _cardCount);
+            if (_cardCount == 52)
+            {
+                _deck.UnlockAll();
+            }
         }
     }
-
-    #endregion
-
-    #region Private methods
-
-    #endregion
 }

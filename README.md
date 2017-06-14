@@ -6,7 +6,7 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 
 ## What's in the box?
 
-- A generic `SmartBag<T>` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game element, which allows for highly flexible and controllable random draws. It features a cooldown mechanism for used items, pre and post conditions and weighted random draws. It's all in the `SmarBag.cs` file.
+- A generic `SmartBag<T>` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game logic element, which allows for highly flexible and controllable random draws. It features a lock / cooldown mechanism for used items, pre- and post- conditions and weighted random draws. It's all in the `SmartBag.cs` file.
 
 ### In development
 
@@ -14,7 +14,7 @@ To be defined.
 
 ### Wish-list
 
-- A simple `SpriteFader`, including alpha fades and dissolves controlled by a grayscale texture, to use for transitions or as a more general visual effect.
+- A simple `SpriteFader`, including an alpha fade or dissolve mode, both controlled by a grayscale texture, to use for transitions or as a more general visual effect.
 - Everybody loves working with spreadsheets, so I think a **basic decorator to a CSV file parser/writer utility** would be useful. Not sure on what features I would include, though.
 
 ## General implementation notes
