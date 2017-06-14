@@ -6,9 +6,11 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 
 ## What's in the box?
 
+- A generic `SmartBag<T>` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game element, which allows for highly flexible and controllable random draws. It features a cooldown mechanism for used items, pre and post conditions and weighted random draws. It's all in the `SmarBag.cs` file.
+
 ### In development
 
-- A generic `SmartBag` (inspired by [Reigns' procedural card system](https://www.youtube.com/watch?v=tDdtbh-oUTU&t=2s)) system to use with any sort of game element, which allows for highly flexible and controllable random draws.
+To be defined.
 
 ### Wish-list
 
@@ -17,5 +19,6 @@ This is not meant to be a ready-made monolithic tool pack, just a gathering poin
 
 ## General implementation notes
 
-1. Empty objects will always be represented by `null` when possible. Check for it in case of errors.
+1. Empty objects will mostly be represented by `null` when possible. Check for it in case of errors.
 1. Errors will be logged using Unity's `Debug.LogError` or `Debug.LogWarning` in case it should not be too noisy, as in search methods.
+1. Most inputs will be treated in public API methods. Private methods will assume inputs are safe.
